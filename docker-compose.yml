@@ -1,0 +1,44 @@
+version: "3.9"
+services:
+  frontend:
+    image: "ghcr.io/serviceboard/frontend:$FRONTEND_VERSION"
+    env_file:
+      - .env
+    ports:
+      - "8080:3000"
+    depends_on:
+      - backend
+  backend:
+    image: "ghcr.io/serviceboard/backend:$BACKEND_VERSION"
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+  db-init:
+    deploy:
+      replicas: 0
+    image: "ghcr.io/serviceboard/backend:$BACKEND_VERSION"
+    env_file:
+      - .env
+    entrypoint: >
+      bash -c "
+       bundle exec rails db:seed:all
+       bundle exec rails active_storage:install
+      "
+    depends_on:
+      - postgres
+      - redis
+  postgres:
+    image: "postgres:11"
+    env_file:
+      - .env
+  redis:
+    image: "redis:6.2"
+  elasticsearch:
+    image: "elasticsearch:7.17.10"
+    environment:
+      - discovery.type=single-node
